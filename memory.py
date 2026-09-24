@@ -1,15 +1,25 @@
 import streamlit as st
 
 
+# =========================================================
+# INITIALIZE MEMORY
+# =========================================================
+
 def initialize_memory():
-    """Initialize the student's conversation memory."""
 
     if "messages" not in st.session_state:
+
         st.session_state.messages = []
 
 
-def add_message(role, content):
-    """Store a message in the current study session."""
+# =========================================================
+# ADD MESSAGE
+# =========================================================
+
+def add_message(
+    role,
+    content,
+):
 
     st.session_state.messages.append(
         {
@@ -19,26 +29,36 @@ def add_message(role, content):
     )
 
 
-def get_messages():
-    """Return all messages from the current study session."""
+# =========================================================
+# GET HISTORY
+# =========================================================
 
-    return st.session_state.messages
+def get_conversation_history():
 
+    initialize_memory()
 
-def get_history():
-    """Convert conversation messages into text for the tutor."""
 
     history = []
 
+
     for message in st.session_state.messages:
+
+        role = message["role"]
+
+        content = message["content"]
+
         history.append(
-            f'{message["role"]}: {message["content"]}'
+            f"{role}: {content}"
         )
+
 
     return "\n".join(history)
 
 
+# =========================================================
+# CLEAR MEMORY
+# =========================================================
+
 def clear_memory():
-    """Clear the current study session."""
 
     st.session_state.messages = []
