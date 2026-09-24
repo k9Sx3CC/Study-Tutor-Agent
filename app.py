@@ -1,12 +1,10 @@
-```python
 import streamlit as st
 
-from crew import run_tutor
+from agent import StudyTutor
 from memory import (
     initialize_memory,
+    get_conversation_history,
     add_message,
-    get_messages,
-    get_history,
     clear_memory,
 )
 
@@ -31,320 +29,154 @@ st.markdown(
     """
     <style>
 
-    /* =========================================
-       GLOBAL APP
-       ========================================= */
+    /* ---------- Main background ---------- */
 
     .stApp {
         background:
             radial-gradient(
-                circle at 15% 10%,
-                rgba(0, 191, 255, 0.10),
+                circle at 20% 10%,
+                rgba(0, 140, 255, 0.12),
                 transparent 28%
             ),
             radial-gradient(
-                circle at 85% 80%,
-                rgba(0, 100, 255, 0.08),
-                transparent 30%
+                circle at 85% 20%,
+                rgba(0, 229, 255, 0.08),
+                transparent 25%
             ),
             #070B14;
-
-        color: #E8F1FF;
+        color: #F5F7FA;
     }
 
 
-    /* =========================================
-       MAIN CONTENT
-       ========================================= */
-
-    .block-container {
-        max-width: 1150px;
-        padding-top: 2rem;
-        padding-bottom: 4rem;
-    }
-
-
-    /* =========================================
-       SIDEBAR
-       ========================================= */
+    /* ---------- Sidebar ---------- */
 
     section[data-testid="stSidebar"] {
-        background: #090F1C;
-        border-right: 1px solid rgba(0, 191, 255, 0.15);
+        background: #0B1120;
+        border-right: 1px solid rgba(0, 183, 255, 0.18);
     }
 
 
-    section[data-testid="stSidebar"] h2 {
-        color: #FFFFFF;
+    /* ---------- Main content ---------- */
+
+    .main-title {
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+        margin-bottom: 5px;
+
+        background: linear-gradient(
+            90deg,
+            #FFFFFF,
+            #53C8FF,
+            #00E5FF
+        );
+
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
 
-    /* =========================================
-       HERO SECTION
-       ========================================= */
-
-    .hero {
-        padding: 28px 30px;
-        border-radius: 22px;
-
-        background: rgba(10, 18, 32, 0.82);
-
-        border: 1px solid rgba(0, 191, 255, 0.20);
-
-        box-shadow:
-            0 0 35px rgba(0, 191, 255, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04);
-
-        margin-bottom: 25px;
+    .subtitle {
+        color: #94A3B8;
+        font-size: 17px;
+        margin-bottom: 30px;
     }
 
 
-    .hero-badge {
-        display: inline-block;
+    /* ---------- Hero card ---------- */
 
-        padding: 6px 12px;
-
-        border-radius: 999px;
-
-        background: rgba(0, 191, 255, 0.10);
-
-        border: 1px solid rgba(0, 191, 255, 0.25);
-
-        color: #55DFFF;
-
-        font-size: 12px;
-
-        font-weight: 600;
-
-        letter-spacing: 0.08em;
-
-        text-transform: uppercase;
-
-        margin-bottom: 12px;
-    }
-
-
-    .hero-title {
-        font-size: 42px;
-
-        font-weight: 750;
-
-        line-height: 1.1;
-
-        color: #FFFFFF;
-
-        margin-bottom: 10px;
-    }
-
-
-    .hero-title span {
-        color: #32D6FF;
-
-        text-shadow:
-            0 0 18px rgba(50, 214, 255, 0.45);
-    }
-
-
-    .hero-subtitle {
-        color: #9FB2C8;
-
-        font-size: 16px;
-
-        line-height: 1.6;
-
-        max-width: 720px;
-    }
-
-
-    /* =========================================
-       SECTION LABEL
-       ========================================= */
-
-    .section-label {
-        color: #55DFFF;
-
-        font-size: 12px;
-
-        font-weight: 700;
-
-        text-transform: uppercase;
-
-        letter-spacing: 0.12em;
-
-        margin-top: 25px;
-
-        margin-bottom: 8px;
-    }
-
-
-    /* =========================================
-       CHAT MESSAGES
-       ========================================= */
-
-    div[data-testid="stChatMessage"] {
-        background: rgba(12, 20, 35, 0.75);
-
-        border: 1px solid rgba(255, 255, 255, 0.06);
-
+    .hero-card {
+        padding: 25px;
         border-radius: 18px;
 
-        padding: 10px;
+        background:
+            linear-gradient(
+                135deg,
+                rgba(0, 183, 255, 0.10),
+                rgba(0, 229, 255, 0.03)
+            );
 
-        margin-bottom: 12px;
-    }
-
-
-    /* =========================================
-       CHAT INPUT
-       ========================================= */
-
-    div[data-testid="stChatInput"] {
-        border: 1px solid rgba(0, 191, 255, 0.25);
-
-        border-radius: 18px;
-
-        background: #0C1423;
+        border: 1px solid rgba(0, 183, 255, 0.22);
 
         box-shadow:
-            0 0 20px rgba(0, 191, 255, 0.06);
+            0 0 30px rgba(0, 183, 255, 0.06);
     }
 
 
-    div[data-testid="stChatInput"]:focus-within {
-        border-color: #32D6FF;
-
-        box-shadow:
-            0 0 25px rgba(50, 214, 255, 0.18);
-    }
-
-
-    /* =========================================
-       BUTTONS
-       ========================================= */
-
-    .stButton > button {
-        width: 100%;
-
-        border-radius: 12px;
-
-        border: 1px solid rgba(50, 214, 255, 0.30);
-
-        background: rgba(0, 191, 255, 0.08);
-
-        color: #DDF8FF;
-
-        font-weight: 600;
-
-        transition: all 0.2s ease;
-    }
-
-
-    .stButton > button:hover {
-        border-color: #32D6FF;
-
-        background: rgba(0, 191, 255, 0.16);
-
-        box-shadow:
-            0 0 18px rgba(50, 214, 255, 0.15);
-
-        color: #FFFFFF;
-    }
-
-
-    /* =========================================
-       SELECT BOX
-       ========================================= */
-
-    div[data-baseweb="select"] > div {
-        background: #0C1423;
-
-        border: 1px solid rgba(0, 191, 255, 0.15);
-
-        border-radius: 12px;
-    }
-
-
-    /* =========================================
-       FEATURE CARDS
-       ========================================= */
+    /* ---------- Feature cards ---------- */
 
     .feature-card {
-        background: rgba(12, 20, 35, 0.72);
-
-        border: 1px solid rgba(255, 255, 255, 0.06);
-
-        border-radius: 18px;
-
         padding: 20px;
+        border-radius: 16px;
 
-        height: 100%;
-    }
+        background: rgba(15, 23, 42, 0.72);
 
+        border: 1px solid rgba(148, 163, 184, 0.10);
 
-    .feature-icon {
-        font-size: 25px;
-
-        margin-bottom: 8px;
+        min-height: 130px;
     }
 
 
     .feature-title {
-        color: #FFFFFF;
-
-        font-size: 16px;
-
+        color: #53C8FF;
+        font-size: 17px;
         font-weight: 700;
-
-        margin-bottom: 5px;
+        margin-bottom: 7px;
     }
 
 
     .feature-text {
-        color: #8FA5BB;
-
-        font-size: 13px;
-
-        line-height: 1.5;
+        color: #94A3B8;
+        font-size: 14px;
     }
 
 
-    /* =========================================
-       STATUS CARD
-       ========================================= */
+    /* ---------- Chat messages ---------- */
 
-    .status-card {
-        background: rgba(0, 191, 255, 0.05);
-
-        border: 1px solid rgba(0, 191, 255, 0.12);
-
-        border-radius: 12px;
-
-        padding: 12px;
-
-        color: #8FA5BB;
-
-        font-size: 12px;
-
-        margin-top: 15px;
+    [data-testid="stChatMessage"] {
+        border-radius: 16px;
+        margin-bottom: 12px;
     }
 
 
-    /* =========================================
-       FOOTER
-       ========================================= */
+    /* ---------- Input ---------- */
 
-    .footer {
-        text-align: center;
+    [data-testid="stChatInput"] {
+        border-color: rgba(0, 183, 255, 0.35);
+    }
 
-        color: #61758A;
+
+    /* ---------- Buttons ---------- */
+
+    .stButton > button {
+        border-radius: 10px;
+        border: 1px solid rgba(0, 183, 255, 0.30);
+        background: #0F172A;
+        color: #E2E8F0;
+    }
+
+
+    .stButton > button:hover {
+        border-color: #00B7FF;
+        color: #53C8FF;
+    }
+
+
+    /* ---------- Small status badge ---------- */
+
+    .status-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+
+        background: rgba(0, 229, 255, 0.08);
+
+        border: 1px solid rgba(0, 229, 255, 0.20);
+
+        color: #53C8FF;
 
         font-size: 12px;
-
-        margin-top: 45px;
-
-        padding-top: 20px;
-
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        font-weight: 600;
     }
 
     </style>
@@ -361,32 +193,11 @@ initialize_memory()
 
 
 # =========================================================
-# HERO SECTION
+# CREATE TUTOR
 # =========================================================
 
-st.markdown(
-    """
-    <div class="hero">
-
-        <div class="hero-badge">
-            ✦ AI Study Assistant
-        </div>
-
-        <div class="hero-title">
-            Learn smarter with your
-            <span>AI Tutor.</span>
-        </div>
-
-        <div class="hero-subtitle">
-            Ask questions, understand difficult concepts,
-            practice what you learn, and get personalized
-            guidance from your Study Tutor Agent.
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+if "tutor" not in st.session_state:
+    st.session_state.tutor = StudyTutor()
 
 
 # =========================================================
@@ -397,39 +208,29 @@ with st.sidebar:
 
     st.markdown("## ✦ Study Tutor")
 
-    st.caption(
-        "Your AI-powered learning companion"
-    )
-
-    st.markdown("---")
-
     st.markdown(
-        '<div class="section-label">Learning Settings</div>',
+        '<span class="status-badge">● AI TUTOR ONLINE</span>',
         unsafe_allow_html=True,
     )
 
+    st.divider()
 
-    # -----------------------------------------
-    # Subject
-    # -----------------------------------------
+    st.markdown("### Learning Settings")
 
     subject = st.selectbox(
         "Subject",
         [
+            "General",
             "Mathematics",
             "Science",
             "Computer Science",
+            "Electrical Engineering",
             "English",
         ],
     )
 
-
-    # -----------------------------------------
-    # Learning Level
-    # -----------------------------------------
-
     level = st.selectbox(
-        "Learning Level",
+        "Learning level",
         [
             "Beginner",
             "Intermediate",
@@ -437,190 +238,148 @@ with st.sidebar:
         ],
     )
 
+    st.divider()
 
-    st.markdown("---")
-
-
-    # -----------------------------------------
-    # Capabilities
-    # -----------------------------------------
-
-    st.markdown(
-        '<div class="section-label">Tutor Capabilities</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown("### Tutor capabilities")
 
     st.markdown(
         """
-        <div style="
-            color:#8FA5BB;
-            line-height:1.9;
-            font-size:13px;
-        ">
+        **✦ Explain concepts**
 
-        ✦ Concept explanations<br>
-        ✦ Step-by-step examples<br>
-        ✦ Practice questions<br>
-        ✦ Answer feedback<br>
-        ✦ Study planning<br>
-        ✦ Mathematical calculations
+        Break difficult topics into simple steps.
 
-        </div>
-        """,
-        unsafe_allow_html=True,
+        **✦ Practice**
+
+        Generate questions to test understanding.
+
+        **✦ Calculate**
+
+        Use a calculator when mathematics requires it.
+
+        **✦ Study planning**
+
+        Create simple topic-based study plans.
+
+        **✦ Memory**
+
+        Remember the current study conversation.
+        """
     )
 
+    st.divider()
 
-    # -----------------------------------------
-    # Memory status
-    # -----------------------------------------
-
-    message_count = len(get_messages())
-
-    st.markdown(
-        f"""
-        <div class="status-card">
-
-        <strong style="color:#55DFFF;">
-        ✦ Session Memory
-        </strong>
-
-        <br><br>
-
-        {message_count} messages stored in this session.
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-    st.markdown("---")
-
-
-    # -----------------------------------------
-    # Clear Memory
-    # -----------------------------------------
-
-    if st.button("↻ Clear Conversation"):
+    if st.button(
+        "Clear Study Session",
+        use_container_width=True,
+    ):
 
         clear_memory()
+
+        st.session_state.tutor = StudyTutor()
 
         st.rerun()
 
 
 # =========================================================
-# EMPTY STATE
+# MAIN HEADER
 # =========================================================
 
-if len(get_messages()) == 0:
+st.markdown(
+    '<div class="main-title">Study Tutor AI</div>',
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    '<div class="subtitle">'
+    "A personal AI tutor that helps you understand, practice, "
+    "and learn step by step."
+    "</div>",
+    unsafe_allow_html=True,
+)
+
+
+# =========================================================
+# HERO
+# =========================================================
+
+if len(st.session_state.messages) == 0:
 
     st.markdown(
-        '<div class="section-label">Start Learning</div>',
+        """
+        <div class="hero-card">
+
+        <h3>What do you want to learn today?</h3>
+
+        <p style="color:#94A3B8;">
+        Ask a question, explore a concept, solve a problem,
+        or ask the tutor to create a study plan.
+        </p>
+
+        </div>
+        """,
         unsafe_allow_html=True,
     )
+
+    st.write("")
 
 
     col1, col2, col3 = st.columns(3)
 
-
-    # -----------------------------------------
-    # Card 1
-    # -----------------------------------------
-
     with col1:
-
         st.markdown(
             """
             <div class="feature-card">
-
-                <div class="feature-icon">
-                    ◈
-                </div>
-
-                <div class="feature-title">
-                    Understand
-                </div>
-
-                <div class="feature-text">
-                    Ask about a difficult concept
-                    and receive an explanation
-                    suited to your level.
-                </div>
-
+            <div class="feature-title">Explain</div>
+            <div class="feature-text">
+            Learn difficult concepts using simple,
+            step-by-step explanations.
+            </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-
-    # -----------------------------------------
-    # Card 2
-    # -----------------------------------------
 
     with col2:
-
         st.markdown(
             """
             <div class="feature-card">
-
-                <div class="feature-icon">
-                    ◇
-                </div>
-
-                <div class="feature-title">
-                    Practice
-                </div>
-
-                <div class="feature-text">
-                    Test your understanding with
-                    questions and examples generated
-                    by your AI tutor.
-                </div>
-
+            <div class="feature-title">Practice</div>
+            <div class="feature-text">
+            Ask for examples, exercises,
+            quizzes, and practice questions.
+            </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-
-    # -----------------------------------------
-    # Card 3
-    # -----------------------------------------
 
     with col3:
-
         st.markdown(
             """
             <div class="feature-card">
-
-                <div class="feature-icon">
-                    ✦
-                </div>
-
-                <div class="feature-title">
-                    Improve
-                </div>
-
-                <div class="feature-text">
-                    Submit your answers and receive
-                    constructive feedback to improve
-                    your understanding.
-                </div>
-
+            <div class="feature-title">Understand</div>
+            <div class="feature-text">
+            Ask follow-up questions until
+            the concept becomes clear.
+            </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
+
+    st.write("")
 
 
 # =========================================================
 # DISPLAY CHAT HISTORY
 # =========================================================
 
-for message in get_messages():
+for message in st.session_state.messages:
 
-    with st.chat_message(message["role"]):
+    with st.chat_message(
+        message["role"],
+        avatar="✦" if message["role"] == "assistant" else "👤",
+    ):
 
         st.markdown(message["content"])
 
@@ -629,102 +388,79 @@ for message in get_messages():
 # CHAT INPUT
 # =========================================================
 
-question = st.chat_input(
+prompt = st.chat_input(
     "Ask your Study Tutor anything..."
 )
 
 
-# =========================================================
-# PROCESS USER QUESTION
-# =========================================================
+if prompt:
 
-if question:
+    # -------------------------
+    # Display user message
+    # -------------------------
 
-    # -----------------------------------------
-    # Show user message
-    # -----------------------------------------
+    with st.chat_message(
+        "user",
+        avatar="👤",
+    ):
 
-    with st.chat_message("user"):
-
-        st.markdown(question)
+        st.markdown(prompt)
 
 
-    # -----------------------------------------
+    # -------------------------
     # Save user message
-    # -----------------------------------------
+    # -------------------------
 
     add_message(
-        role="user",
-        content=question,
+        "user",
+        prompt,
     )
 
 
-    # -----------------------------------------
-    # Get conversation history
-    # -----------------------------------------
+    # -------------------------
+    # Get previous conversation
+    # -------------------------
 
-    history = get_history()
+    history = get_conversation_history()
 
 
-    # -----------------------------------------
-    # Run Study Tutor
-    # -----------------------------------------
+    # -------------------------
+    # Run agent
+    # -------------------------
 
-    with st.chat_message("assistant"):
+    with st.chat_message(
+        "assistant",
+        avatar="✦",
+    ):
 
         with st.spinner(
-            "✦ Your tutor is thinking..."
+            "Your tutor is thinking..."
         ):
 
             try:
 
-                response = run_tutor(
+                response = st.session_state.tutor.ask(
+                    question=prompt,
                     subject=subject,
                     level=level,
-                    question=question,
                     history=history,
                 )
 
-
-                # Convert CrewAI result to text
                 answer = str(response)
 
-
-                # Display answer
                 st.markdown(answer)
 
-
-                # Save tutor response
                 add_message(
-                    role="assistant",
-                    content=answer,
+                    "assistant",
+                    answer,
                 )
 
-
-            except Exception as e:
+            except Exception as error:
 
                 st.error(
-                    "The tutor could not respond."
+                    "The tutor could not complete the request."
                 )
 
                 st.caption(
-                    "Please check your Groq API key "
-                    "and deployment settings."
+                    f"Error: {error}"
                 )
-
-                st.write(str(e))
-
-
-# =========================================================
-# FOOTER
-# =========================================================
-
-st.markdown(
-    """
-    <div class="footer">
-        Study Tutor AI · Powered by CrewAI + Groq
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-```
